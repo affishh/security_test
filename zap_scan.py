@@ -1,31 +1,33 @@
+import os
 from zapv2 import ZAPv2
 import time
 
-target = 'http://nodeapp:4000'
-apikey = 'changeme'
-
-zap = ZAPv2(apikey=apikey, proxies={'http': 'http://zap:8090', 'https': 'http://zap:8090'})
+target = os.environ.get("TARGET_URL")
+apikey = os.environ.get("ZAP_API_KEY")
+zap_host = os.environ.get("ZAP_HOST", "zap")
 
 print(f"Accessing {target}")
+
+zap = ZAPv2(apikey=apikey, proxies={'http': f'http://{zap_host}:8090', 'https': f'http://{zap_host}:8090'})
+
+# Wait for ZAP to be ready
+for i in range(60):
+    try:
+        if int(zap.core.version):
+            print("✅ Connected to ZAP!")
+            break
+    except:
+        print("⏳ Waiting for ZAP to be ready...")
+        time.sleep(2)
+
+print("Starting scan...")
 zap.urlopen(target)
 time.sleep(2)
-
-print("Spidering target...")
-zap.spider.scan(target)
-time.sleep(2)
-
-while int(zap.spider.status) < 100:
-    print(f"Spider progress: {zap.spider.status}%")
-    time.sleep(1)
-
-print("Scanning target...")
-zap.ascan.scan(target)
-while int(zap.ascan.status) < 100:
-    print(f"Scan progress: {zap.ascan.status}%")
+scan_id = zap.ascan.scan(target)
+while int(zap.ascan.status(scan_id)) < 100:
+    print(f"Scan progress: {zap.ascan.status(scan_id)}%")
     time.sleep(2)
 
-print("Generating report...")
+print("Scan complete.")
 with open("zap_report.html", "w") as f:
     f.write(zap.core.htmlreport())
-
-print("Done.")

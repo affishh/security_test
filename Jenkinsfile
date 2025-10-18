@@ -74,12 +74,11 @@ pipeline {
         stage('Run ZAP Scan') {
             steps {
                 sh '''
-                    python3 -m venv venv
-                    . venv/bin/activate
-                    pip install --quiet python-owasp-zap-v2.4
-
-                    echo "🚨 Running ZAP Scan..."
-                    TARGET_URL=${TARGET_URL} ZAP_API_KEY=${ZAP_API_KEY} ZAP_HOST=${ZAP_API_HOST} python3 zap_scan.py
+                    echo "🚨 Running ZAP Scan inside Docker..."
+                    docker run --rm --network zap-net -v $(pwd):/zap/wrk python:3.12-slim bash -c "
+                        cd /zap/wrk &&
+                        echo "🚨 Running ZAP Scan..."
+                        TARGET_URL=${TARGET_URL} ZAP_API_KEY=${ZAP_API_KEY} ZAP_HOST=${ZAP_API_HOST} python3 zap_scan.py
                 '''
             }
         }
