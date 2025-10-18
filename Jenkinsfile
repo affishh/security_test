@@ -1,10 +1,9 @@
 pipeline {
     agent any
+
     environment {
-        ZAP_API_KEY = 'changeme'
         ZAP_PORT = '8090'
-        APP_PORT = '4000'
-        TARGET_URL = "http://localhost:${APP_PORT}"
+        ZAP_API_KEY = 'changeme'
     }
 
     stages {
@@ -17,19 +16,19 @@ pipeline {
         stage('Start Node App') {
             steps {
                 script {
-                    echo "Starting Node.js app on port ${env.APP_PORT}"
+                    echo 'Starting Node.js app on port 4000'
                     sh '''
-                        nohup npm start &
+                        nohup npm start > node.log 2>&1 &
                         echo $! > nodeapp.pid
-
-                        # Wait until app is up
+                        
+                        # Wait for app to start
                         for i in {1..10}; do
-                          if curl -s http://localhost:${APP_PORT} > /dev/null; then
-                            echo "Node app is up"
-                            break
-                          fi
-                          echo "Waiting for Node app to start..."
-                          sleep 2
+                            if curl -s http://localhost:4000 > /dev/null; then
+                                echo "Node app is up"
+                                break
+                            fi
+                            echo "Waiting for Node app... (${i}/10)"
+                            sleep 2
                         done
                     '''
                 }
@@ -48,15 +47,14 @@ pipeline {
                         ghcr.io/zaproxy/zaproxy \
                         zap.sh -daemon -host 0.0.0.0 -port ${ZAP_PORT} -config api.key=${ZAP_API_KEY}
 
-                    echo "Waiting for ZAP API to become available..."
+                    echo "Waiting for ZAP to be fully ready..."
                     for i in {1..30}; do
-                        if curl -s http://localhost:${ZAP_PORT}/JSON/core/view/version/ | grep -q version; then
-                            echo "ZAP is ready!"
+                        if curl -s http://localhost:${ZAP_PORT}/ | grep -q "OWASP ZAP"; then
+                            echo "ZAP is fully up and ready!"
                             break
-                        else
-                            echo "Waiting for ZAP... (${i}/30)"
-                            sleep 2
                         fi
+                        echo "ZAP not ready yet... (${i}/30)"
+                        sleep 2
                     done
                 '''
             }
@@ -69,37 +67,8 @@ pipeline {
                     . venv/bin/activate
                     pip install --quiet python-owasp-zap-v2.4
 
-                    cat <<EOF > zap_scan.py
-from zapv2 import ZAPv2
+                    sleep 5  # ensure ZAP is stable
 
-target = '${TARGET_URL}'
-apikey = '${ZAP_API_KEY}'
-zap = ZAPv2(apikey=apikey, proxies={'http': 'http://localhost:${ZAP_PORT}', 'https': 'http://localhost:${ZAP_PORT}'})
-
-print("Accessing target...")
-zap.urlopen(target)
-
-print("Spidering target...")
-zap.spider.scan(target)
-while int(zap.spider.status()) < 100:
-    print("Spider progress: " + zap.spider.status() + "%")
-    import time; time.sleep(1)
-
-print("Spider complete. Scanning target...")
-zap.ascan.scan(target)
-while int(zap.ascan.status()) < 100:
-    print("Scan progress: " + zap.ascan.status() + "%")
-    import time; time.sleep(5)
-
-print("Scan complete.")
-alerts = zap.core.alerts(baseurl=target)
-print("Number of alerts: ", len(alerts))
-
-with open("zap_report.html", "w") as f:
-    f.write(zap.core.htmlreport())
-EOF
-
-                    . venv/bin/activate
                     python3 zap_scan.py
                 '''
             }
@@ -107,7 +76,7 @@ EOF
 
         stage('Archive Report') {
             steps {
-                archiveArtifacts artifacts: 'zap_report.html', fingerprint: true
+                archiveArtifacts artifacts: 'zap_report.html', allowEmptyArchive: true
             }
         }
     }
@@ -116,8 +85,10 @@ EOF
         always {
             echo 'Cleaning up Node app and ZAP container'
             sh '''
-                [ -f nodeapp.pid ] && kill $(cat nodeapp.pid) || true
-                rm -f nodeapp.pid
+                if [ -f nodeapp.pid ]; then
+                    kill $(cat nodeapp.pid) || true
+                    rm -f nodeapp.pid
+                fi
 
                 docker stop zap || true
                 docker rm zap || true
