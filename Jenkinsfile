@@ -4,7 +4,7 @@ pipeline {
     environment {
         ZAP_PORT = '8090'
         ZAP_API_KEY = 'changeme'
-        TARGET_URL = 'http://host.docker.internal:4000'  // Use host.docker.internal for Docker container access
+        TARGET_URL = 'http://host.docker.internal:4000'  // Needed so ZAP (in Docker) can reach host app
     }
 
     stages {
@@ -30,10 +30,10 @@ pipeline {
 
                         for i in {1..30}; do
                             if curl -s http://localhost:4000 > /dev/null; then
-                                echo "Node app is up"
+                                echo "✅ Node app is up"
                                 break
                             fi
-                            echo "Waiting for Node app... ($i/30)"
+                            echo "⏳ Waiting for Node app... ($i/30)"
                             sleep 2
                         done
                     '''
@@ -42,40 +42,38 @@ pipeline {
         }
 
         stage('Start ZAP in Docker') {
-    steps {
-        echo "Starting ZAP Docker container on port ${env.ZAP_PORT}"
-         sh '''
-            docker rm -f zap || true
+            steps {
+                echo "Starting ZAP Docker container on port ${env.ZAP_PORT}"
+                sh '''
+                    docker rm -f zap || true
 
-            # Run ZAP in host network mode for better connectivity (Linux only)
-            docker run -u root -d \
-                --network=host \\
-                --name zap \\
-                ghcr.io/zaproxy/zaproxy \\
-                zap.sh -daemon -host 0.0.0.0 -port ${ZAP_PORT} -config api.key=${ZAP_API_KEY}
+                    # Use host networking for better connectivity to localhost apps (Linux only)
+                    docker run -u root -d \
+                        --network=host \
+                        --name zap \
+                        ghcr.io/zaproxy/zaproxy \
+                        zap.sh -daemon -host 0.0.0.0 -port ${ZAP_PORT} -config api.key=${ZAP_API_KEY}
 
-            echo "⏳ Waiting for ZAP API to become available..."
+                    echo "⏳ Waiting for ZAP API to become available..."
 
-            for i in {1..60}; do
-                STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:${ZAP_PORT}/JSON/core/view/version/)
-                if [ "$STATUS" = "200" ]; then
-                    echo "✅ ZAP is ready!"
-                    break
-                fi
-                echo "⏱️  Waiting for ZAP... ($i/60)"
-                sleep 2
-            done
+                    for i in {1..60}; do
+                        STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:${ZAP_PORT}/JSON/core/view/version/)
+                        if [ "$STATUS" = "200" ]; then
+                            echo "✅ ZAP is ready!"
+                            break
+                        fi
+                        echo "⏱️ Waiting for ZAP... ($i/60)"
+                        sleep 2
+                    done
 
-            # Final check, if ZAP still not ready, exit and print logs
-            STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:${ZAP_PORT}/JSON/core/view/version/)
-            if [ "$STATUS" != "200" ]; then
-                echo "❌ ZAP failed to become ready. Printing container logs:"
-                docker logs zap
-                exit 1
-            fi
-        '''
-    }
-}
+                    STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:${ZAP_PORT}/JSON/core/view/version/)
+                    if [ "$STATUS" != "200" ]; then
+                        echo "❌ ZAP failed to become ready. Printing container logs:"
+                        docker logs zap
+                        exit 1
+                    fi
+                '''
+            }
         }
 
         stage('Setup Python Env and Run ZAP Scan') {
