@@ -50,14 +50,14 @@ pipeline {
                     -config api.disablekey=false \
                     -config api.includelocalhost=true
                     echo "⏳ Waiting for ZAP to be ready..."
-                    for i in {1..120}; do
+                    for i in {1..500}; do
                         STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://zap:8090/JSON/core/view/version/?apikey=${ZAP_API_KEY} || true)
                         echo "ZAP HTTP status: $STATUS"
                         if [ "$STATUS" = "200" ]; then
                             echo "✅ ZAP is ready!"
                             break
                         fi
-                        echo "⏳ Waiting for ZAP... ($i/120)"
+                        echo "⏳ Waiting for ZAP... ($i/500)"
                         sleep 2
                     done
                     if [ "$STATUS" != "200" ]; then
