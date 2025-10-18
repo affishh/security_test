@@ -47,14 +47,16 @@ pipeline {
                 sh """
                     docker rm -f zap || true
                     docker run -u root -d \\
-                        -p ${ZAP_PORT}:${ZAP_PORT} \
+                        -p ${ZAP_PORT}:${ZAP_PORT} \\
                         --name zap \\
                         ghcr.io/zaproxy/zaproxy \\
                         zap.sh -daemon \\
                         -host 0.0.0.0 \\
                         -port ${ZAP_PORT} \\
                         -config api.key=${ZAP_API_KEY} \\
-                        -config api.addrs.addr=* \\
+                        -config api.addrs.addr.name=172.17.0.1 \\
+                        -config api.addrs.addr.regex=true \\
+                        -config api.addrs.addr=.* \\
                         -config api.disablekey=false \\
                         -config api.includelocalhost=true
 
