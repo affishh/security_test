@@ -59,14 +59,21 @@ pipeline {
 
                     echo "⏳ Waiting for ZAP to be ready..."
                     for i in {1..120}; do
-                        STATUS=$(docker exec zap curl -s -o /dev/null -w "%{http_code}" http://localhost:8090 || true)
+                        STATUS=$(STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://zap:8090/JSON/core/view/version/?apikey=${ZAP_API_KEY} || true)
                         echo "ZAP HTTP status: $STATUS"
                         if [ "$STATUS" = "200" ]; then
                             echo "✅ ZAP is ready!"
                             break
+                        
                         fi
+                        echo "⏳ Waiting for ZAP... ($i/120)"
+
                         sleep 2
                     done
+                    if [ "$STATUS" != "200" ]; then
+                        echo "❌ ZAP did not start in time."
+                        exit 1
+                    fi
                 '''
             }
         }
@@ -76,7 +83,7 @@ pipeline {
                 sh '''
                 echo "🚨 Running ZAP Scan inside Docker..."
 
-                docker run --rm --network zap-net -v $(pwd):/zap/wrk python:3.12-slim bash -c "
+                docker run --rm --network zap-net -v $(pwd):/zap/wrk python:3.12-slim bash -c " \
                     cd /zap/wrk && \
                     echo '🚨 Installing dependencies...' && \
                     pip install --quiet python-owasp-zap-v2.4 && \
