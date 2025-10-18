@@ -10,6 +10,7 @@ pipeline {
 
         stage('Start App') {
             steps {
+                echo 'Starting app...'
                 sh '''
                     nohup node app.js > app.log 2>&1 &
                     echo $! > app.pid
@@ -22,10 +23,7 @@ pipeline {
             steps {
                 echo 'Running OWASP ZAP...'
                 sh '''
-                    docker run --rm -u root \
-                        -v $(pwd):/zap/wrk/:rw \
-                        --network=host \
-                        -t owasp/zap2docker-stable zap-baseline.py \
+                    /snap/bin/zaproxy.baseline \
                         -t http://localhost:3000 \
                         -r zap_report.html \
                         -d -I
@@ -38,6 +36,8 @@ pipeline {
         always {
             echo 'Cleaning up app...'
             sh 'if [ -f app.pid ]; then kill $(cat app.pid); fi'
+
+            archiveArtifacts artifacts: 'zap_report.html', onlyIfSuccessful: false
         }
     }
 }
