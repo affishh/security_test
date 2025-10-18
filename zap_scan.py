@@ -5,7 +5,7 @@ import time
 target = os.getenv("TARGET_URL", "http://localhost:4000")
 apikey = os.getenv("ZAP_API_KEY", "changeme")
 
-zap = ZAPv2(apikey=apikey, proxies={'http': 'http://localhost:8091', 'https': 'http://localhost:8091'})
+zap = ZAPv2(apikey=apikey, proxies={'http': 'http://localhost:8090', 'https': 'http://localhost:8090'})
 
 print(f"Accessing target: {target}")
 zap.urlopen(target)
