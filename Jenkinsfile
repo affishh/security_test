@@ -4,7 +4,7 @@ pipeline {
     environment {
         ZAP_PORT = '8090'
         ZAP_API_KEY = 'changeme'
-        TARGET_URL = 'http://host.docker.internal:4000'  // Needed so ZAP (in Docker) can reach host app
+        TARGET_URL = 'http://host.docker.internal:4000'
     }
 
     stages {
@@ -43,38 +43,40 @@ pipeline {
 
         stage('Start ZAP in Docker') {
             steps {
-                echo "Starting ZAP Docker container on port ${env.ZAP_PORT}"
-                sh '''
-                docker run -u root -d \
-                --network=host \
-                --name zap \
-                ghcr.io/zaproxy/zaproxy \
-                zap.sh -daemon \
-                -host 0.0.0.0 \
-                -port ${ZAP_PORT} \
-                -config api.key=${ZAP_API_KEY}
-                -config api.addrs.addr=.* \
-                -config api.disablekey=false
+                echo "🚀 Starting ZAP Docker container on port ${env.ZAP_PORT}"
+                sh """
+                    docker rm -f zap || true
 
-                echo "⏳ Waiting for ZAP API to become available..."
+                    docker run -u root -d \
+                        --network=host \
+                        --name zap \
+                        ghcr.io/zaproxy/zaproxy \
+                        zap.sh -daemon \
+                        -host 0.0.0.0 \
+                        -port ${ZAP_PORT} \
+                        -config api.key=${ZAP_API_KEY} \
+                        -config api.addrs.addr=* \
+                        -config api.disablekey=false
+
+                    echo "⏳ Waiting for ZAP API to become available..."
 
                     for i in {1..60}; do
-                        STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:${ZAP_PORT}/JSON/core/view/version/)
-                        if [ "$STATUS" = "200" ]; then
+                        STATUS=\$(curl -s -o /dev/null -w "%{http_code}" http://localhost:${ZAP_PORT}/JSON/core/view/version/)
+                        if [ "\$STATUS" = "200" ]; then
                             echo "✅ ZAP is ready!"
                             break
                         fi
-                        echo "⏱️ Waiting for ZAP... ($i/60)"
+                        echo "⏱️  Waiting for ZAP... (\$i/60)"
                         sleep 2
                     done
 
-                    STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:${ZAP_PORT}/JSON/core/view/version/)
-                    if [ "$STATUS" != "200" ]; then
+                    FINAL_STATUS=\$(curl -s -o /dev/null -w "%{http_code}" http://localhost:${ZAP_PORT}/JSON/core/view/version/)
+                    if [ "\$FINAL_STATUS" != "200" ]; then
                         echo "❌ ZAP failed to become ready. Printing container logs:"
                         docker logs zap
                         exit 1
                     fi
-                '''
+                """
             }
         }
 
@@ -85,7 +87,7 @@ pipeline {
                     . venv/bin/activate
                     pip install --quiet python-owasp-zap-v2.4
 
-                    echo "Running ZAP Scan..."
+                    echo "🕷️ Running ZAP Scan..."
                     TARGET_URL=${TARGET_URL} ZAP_API_KEY=${ZAP_API_KEY} python3 zap_scan.py
                 '''
             }
@@ -100,7 +102,7 @@ pipeline {
 
     post {
         always {
-            echo "Cleaning up Node app and ZAP container"
+            echo "🧹 Cleaning up Node app and ZAP container"
             sh '''
                 if [ -f nodeapp.pid ]; then
                     kill $(cat nodeapp.pid) || true
