@@ -52,7 +52,7 @@ pipeline {
                 sh '''
                     echo "🕷️ Starting OWASP ZAP container..."
 
-                    docker rm -f zap || true
+                   
 
                     docker run -u root -d --name zap --network zap-net \
                         -p 8090:8090 ghcr.io/zaproxy/zaproxy \
