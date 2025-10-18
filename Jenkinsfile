@@ -47,32 +47,27 @@ pipeline {
                 sh """
                     docker rm -f zap || true
 
-                    docker run --name zap -d \
-                        -p 8090:8090 \
-                        ghcr.io/zaproxy/zaproxy \
-                        zap.sh -daemon \
-                        -host 0.0.0.0 \
-                        -port 8090 \
-                        -config api.key=changeme \
-                        -config api.addrs.addr.name=.* \
+                    docker run --rm --network zap-net --name zap -d -p ${ZAP_PORT}:${ZAP_PORT} ghcr.io/zaproxy/zaproxy \
+                        zap.sh -daemon -host 0.0.0.0 -port ${ZAP_PORT} \
+                        -config api.key=${ZAP_API_KEY} \
+                        -config api.addrs.addr=.* \
                         -config api.addrs.addr.regex=true \
                         -config api.disablekey=false \
                         -config api.includelocalhost=true
 
                     echo "⏳ Waiting for ZAP API to become available..."
-                    sleep 20
 
-                    for i in {1..60}; do
-                        STATUS=\$(curl -s -o /dev/null -w "%{http_code}" http://localhost:${ZAP_PORT}/JSON/core/view/version/)
+                    for i in {1..30}; do
+                        STATUS=\$(curl -s -o /dev/null -w "%{http_code}" http://localhost:${ZAP_PORT}/JSON/core/view/version/?apikey=${ZAP_API_KEY})
                         if [ "\$STATUS" = "200" ]; then
                             echo "✅ ZAP is ready!"
                             break
                         fi
-                        echo "⏱️ Waiting for ZAP... (\$i/60)"
+                        echo "⏱️ Waiting for ZAP... (\$i/30)"
                         sleep 2
                     done
 
-                    FINAL_STATUS=\$(curl -s -o /dev/null -w "%{http_code}" http://localhost:${ZAP_PORT}/JSON/core/view/version/)
+                    FINAL_STATUS=\$(curl -s -o /dev/null -w "%{http_code}" http://localhost:${ZAP_PORT}/JSON/core/view/version/?apikey=${ZAP_API_KEY})
                     if [ "\$FINAL_STATUS" != "200" ]; then
                         echo "❌ ZAP failed to become ready. Printing container logs:"
                         docker logs zap
