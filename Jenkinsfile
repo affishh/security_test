@@ -57,7 +57,23 @@ pipeline {
                 sh """
                 pip install python-owasp-zap-v2.4 --quiet
 
-                cat <<EOF > zap_scan.py
+                cat <<EOF > zap_scan.py """
+            }
+        }
+
+        stage('Setup Python Env and Install ZAP Python API') {
+            steps {
+                sh '''
+                  python3 -m venv venv
+                  . venv/bin/activate
+                  pip install --quiet python-owasp-zap-v2.4
+                '''
+            }
+
+        }
+  }
+}
+
 import time
 import os
 from zapv2 import ZAPv2
