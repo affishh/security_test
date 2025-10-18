@@ -34,4 +34,6 @@ try:
         f.write(zap.core.htmlreport())
 
 except Exception as e:
-    print(f"Error: {e}")
+    print(f"Error: {e}")
+
+    
