@@ -25,6 +25,7 @@ try:
     zap.urlopen(target)
     time.sleep(2)
     scan_id = zap.ascan.scan(target)
+
     while int(zap.ascan.status(scan_id)) < 100:
         print(f"Scan progress: {zap.ascan.status(scan_id)}%")
         time.sleep(2)
@@ -35,5 +36,3 @@ try:
 
 except Exception as e:
     print(f"Error: {e}")
-
-    

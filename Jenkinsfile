@@ -58,8 +58,8 @@ pipeline {
                         -config api.includelocalhost=true
 
                     echo "⏳ Waiting for ZAP to be ready..."
-                    for i in {1..90}; do
-                        STATUS=$(docker exec zap curl -s -o /dev/null -w "%{http_code}" http://localhost:8090 || true)
+                    for i in {1..120}; do
+                        STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://zap:8090/JSON/core/view/version/?apikey=${ZAP_API_KEY} || true)
                         echo "ZAP HTTP status: $STATUS"
                         if [ "$STATUS" = "200" ]; then
                             echo "✅ ZAP is ready!"
