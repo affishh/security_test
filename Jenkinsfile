@@ -4,7 +4,7 @@ pipeline {
     environment {
         ZAP_PORT = '8090'
         ZAP_API_KEY = 'changeme'
-        TARGET_URL = 'http://host.docker.internal:4000'  // Use this so ZAP container can access Node app
+        TARGET_URL = 'http://host.docker.internal:4000'  // Use host.docker.internal for Docker container access
     }
 
     stages {
@@ -44,38 +44,34 @@ pipeline {
         stage('Start ZAP in Docker') {
             steps {
                 echo "Starting ZAP Docker container on port ${env.ZAP_PORT}"
-                sh '''
+                sh """
                     docker rm -f zap || true
 
-                    # For Linux hosts, uncomment this and comment out the below docker run line
+                    # Uncomment this line if Jenkins runs on Linux to fix localhost networking issues
                     # docker run -u root -d --network=host --name zap ghcr.io/zaproxy/zaproxy zap.sh -daemon -host 0.0.0.0 -port ${ZAP_PORT} -config api.key=${ZAP_API_KEY}
 
-                    # Default docker run for other OSes (e.g. Mac, Windows)
-                    docker run -u root -d \
-                        -p ${ZAP_PORT}:${ZAP_PORT} \
-                        --name zap \
-                        ghcr.io/zaproxy/zaproxy \
-                        zap.sh -daemon -host 0.0.0.0 -port ${ZAP_PORT} -config api.key=${ZAP_API_KEY}
+                    # For Mac/Windows or other OSes, use port mapping instead
+                    docker run -u root -d -p ${ZAP_PORT}:${ZAP_PORT} --name zap ghcr.io/zaproxy/zaproxy zap.sh -daemon -host 0.0.0.0 -port ${ZAP_PORT} -config api.key=${ZAP_API_KEY}
 
                     echo "Waiting for ZAP API to become available..."
-                    for i in $(seq 1 30); do
-                        status=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:${ZAP_PORT}/JSON/core/view/version/)
-                        if [ "$status" = "200" ]; then
+                    for i in \$(seq 1 30); do
+                        status=\$(curl -s -o /dev/null -w "%{http_code}" http://localhost:${ZAP_PORT}/JSON/core/view/version/)
+                        if [ "\$status" = "200" ]; then
                             echo "✅ ZAP is ready!"
                             break
                         fi
-                        echo "⏳ Waiting for ZAP... ($i/30)"
+                        echo "⏳ Waiting for ZAP... (\$i/30)"
                         sleep 2
                     done
 
                     # Final check
-                    status=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:${ZAP_PORT}/JSON/core/view/version/)
-                    if [ "$status" != "200" ]; then
-                        echo "❌ ZAP did not start successfully. Dumping logs:"
+                    status=\$(curl -s -o /dev/null -w "%{http_code}" http://localhost:${ZAP_PORT}/JSON/core/view/version/)
+                    if [ "\$status" != "200" ]; then
+                        echo "❌ ZAP did not start properly. Container logs:"
                         docker logs zap || true
                         exit 1
                     fi
-                '''
+                """
             }
         }
 

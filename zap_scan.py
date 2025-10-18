@@ -1,9 +1,13 @@
 from zapv2 import ZAPv2
 import time
 import os
+from zapv2 import ZAPv2
 
-target = os.getenv('TARGET_URL', 'http://host.docker.internal:4000')
-api_key = os.getenv('ZAP_API_KEY', 'changeme')
+target = os.getenv('TARGET_URL')
+api_key = os.getenv('ZAP_API_KEY')
+
+print(f"Accessing target: {target}")
+
 zap = ZAPv2(apikey=api_key, proxies={'http': 'http://localhost:8090', 'https': 'http://localhost:8090'})
 
 print(f"Accessing target: {target}")
