@@ -30,7 +30,7 @@ pipeline {
 
                     echo "⏳ Waiting for app to be ready..."
                     for i in {1..30}; do
-                        STATUS=$(docker exec nodeapp curl -s -o /dev/null -w "%{http_code}" http://localhost:4000 || true)
+                        STATUS=$(nodeapp curl -s -o /dev/null -w "%{http_code}" http://localhost:4000 || true)
                         echo "App HTTP status: $STATUS"
                         if [ "$STATUS" = "200" ]; then
                             echo "✅ App is ready!"
