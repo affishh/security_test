@@ -1,5 +1,5 @@
 __pycache__/
 venv/
-zap-common.pyc
+zap-common.py
 zap-api-python/
-zap-baseline.pyc
+zap-baseline.py
