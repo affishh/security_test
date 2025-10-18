@@ -10,19 +10,24 @@ pipeline {
 
         stage('Start App') {
             steps {
-                sh 'nohup node app.js > app.log 2>&1 & echo $! > app.pid'
+                sh '''
+                    nohup node app.js > app.log 2>&1 &
+                    echo $! > app.pid
+                '''
                 sleep 5
             }
         }
 
         stage('Security Test - ZAP') {
             steps {
+                echo 'Running OWASP ZAP...'
                 sh '''
                     docker run --rm -u root \
                         -v $(pwd):/zap/wrk/:rw \
+                        --network=host \
                         -t owasp/zap2docker-stable zap-baseline.py \
                         -t http://localhost:3000 \
-                        -r zap_report.html
+                        -r zap_report.html \
                         -d -I
                 '''
             }
@@ -31,6 +36,7 @@ pipeline {
 
     post {
         always {
+            echo 'Cleaning up app...'
             sh 'if [ -f app.pid ]; then kill $(cat app.pid); fi'
         }
     }
