@@ -94,6 +94,6 @@ pipeline {
                 docker rm -f zap || true
                 docker network rm zap-net || true
             '''
-        }
-    }
+        }
+    }
 }
