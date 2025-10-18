@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        ZAP_PORT = '8090'
+        ZAP_PORT = '8090'  // Use ZAP default port to avoid confusion
         ZAP_API_KEY = 'changeme'
         TARGET_URL = 'http://host.docker.internal:4000'
     }
@@ -46,18 +46,18 @@ pipeline {
                 echo "🚀 Starting ZAP Docker container on port ${env.ZAP_PORT}"
                 sh """
                     docker rm -f zap || true
-                    docker run -u root -d \\
-                        -p ${ZAP_PORT}:${ZAP_PORT} \\
-                        --name zap \\
-                        ghcr.io/zaproxy/zaproxy \\
-                        zap.sh -daemon \\
-                        -host 0.0.0.0 \\
-                        -port ${ZAP_PORT} \\
-                        -config api.key=${ZAP_API_KEY} \\
-                        -config api.addrs.addr.name=172.17.0.1 \\
-                        -config api.addrs.addr.regex=true \\
-                        -config api.addrs.addr=.* \\
-                        -config api.disablekey=false \\
+
+                    docker run -u root -d \
+                        -p ${ZAP_PORT}:${ZAP_PORT} \
+                        --name zap \
+                        ghcr.io/zaproxy/zaproxy \
+                        zap.sh -daemon \
+                        -host 0.0.0.0 \
+                        -port ${ZAP_PORT} \
+                        -config api.key=${ZAP_API_KEY} \
+                        -config api.addrs.addr=.* \
+                        -config api.addrs.addr.regex=true \
+                        -config api.disablekey=false \
                         -config api.includelocalhost=true
 
                     echo "⏳ Waiting for ZAP API to become available..."
