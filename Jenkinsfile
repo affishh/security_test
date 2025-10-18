@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        ZAP_PORT = '8090'  // Use ZAP default port to avoid confusion
+        ZAP_PORT = '8090'
         ZAP_API_KEY = 'changeme'
         TARGET_URL = 'http://host.docker.internal:4000'
     }
@@ -23,7 +23,7 @@ pipeline {
         stage('Start Node App') {
             steps {
                 script {
-                    echo "Starting Node.js app on port 4000"
+                    echo "🚀 Starting Node.js app on port 4000"
                     sh '''
                         nohup npm start > nodeapp.log 2>&1 &
                         echo $! > nodeapp.pid
@@ -48,14 +48,14 @@ pipeline {
                     docker rm -f zap || true
 
                     docker run -u root -d \
-                        -p ${ZAP_PORT}:${ZAP_PORT} \
                         --name zap \
+                        -p ${ZAP_PORT}:8090 \
                         ghcr.io/zaproxy/zaproxy \
                         zap.sh -daemon \
                         -host 0.0.0.0 \
-                        -port ${ZAP_PORT} \
+                        -port 8090 \
                         -config api.key=${ZAP_API_KEY} \
-                        -config api.addrs.addr=.* \
+                        -config api.addrs.addr=0.0.0.0 \
                         -config api.addrs.addr.regex=true \
                         -config api.disablekey=false \
                         -config api.includelocalhost=true
@@ -68,7 +68,7 @@ pipeline {
                             echo "✅ ZAP is ready!"
                             break
                         fi
-                        echo "⏱️  Waiting for ZAP... (\$i/60)"
+                        echo "⏱️ Waiting for ZAP... (\$i/60)"
                         sleep 2
                     done
 
