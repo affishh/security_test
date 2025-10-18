@@ -19,10 +19,7 @@ pipeline {
             steps {
                 script {
                     echo "Starting Node.js app on port ${env.NODE_PORT}"
-                    // Start Node app in background and save PID
                     sh 'nohup npm start > app.log 2>&1 & echo $! > nodeapp.pid'
-
-                    // Wait for app to be up (max ~30 seconds)
                     sh '''
                     for i in {1..10}; do
                       if curl -s ${TARGET_URL} > /dev/null; then
@@ -52,36 +49,27 @@ pipeline {
             }
         }
 
-        stage('Run ZAP Scan') {
-            steps {
-                sh """
-                pip install python-owasp-zap-v2.4 --quiet
-
-                cat <<EOF > zap_scan.py """
-            }
-        }
-
-        stage('Setup Python Env and Install ZAP Python API') {
+        stage('Setup Python Env and Run ZAP Scan') {
             steps {
                 sh '''
-                  python3 -m venv venv
-                  . venv/bin/activate
-                  pip install --quiet python-owasp-zap-v2.4
+                python3 -m venv venv
+                . venv/bin/activate
+                pip install --quiet python-owasp-zap-v2.4
                 '''
-            }
 
-        }
-  }
-}
-
+                writeFile file: 'zap_scan.py', text: """
 import time
 import os
 from zapv2 import ZAPv2
 
 api_key = os.getenv('ZAP_API_KEY', 'changeme')
 target = os.getenv('TARGET_URL', 'http://localhost:4000')
+zap_port = os.getenv('ZAP_PORT', '8090')
 
-zap = ZAPv2(apikey=api_key, proxies={'http': 'http://localhost:${ZAP_PORT}', 'https': 'http://localhost:${ZAP_PORT}'})
+zap = ZAPv2(apikey=api_key, proxies={
+    'http': f'http://localhost:{zap_port}',
+    'https': f'http://localhost:{zap_port}'
+})
 
 print("Accessing target...")
 zap.urlopen(target)
@@ -105,10 +93,12 @@ with open("zap_report.html", "w") as f:
     f.write(report)
 
 print("Scan complete.")
-EOF
+"""
 
-                python3 zap_scan.py
-                """
+                sh '''
+                . venv/bin/activate
+                python zap_scan.py
+                '''
             }
         }
 
