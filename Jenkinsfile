@@ -47,16 +47,16 @@ pipeline {
                 sh """
                     docker rm -f zap || true
 
-                    docker run -u root -d \
-                        --network=host \
-                        --name zap \
-                        ghcr.io/zaproxy/zaproxy \
-                        zap.sh -daemon \
-                        -host 0.0.0.0 \
-                        -port ${ZAP_PORT} \
-                        -config api.key=${ZAP_API_KEY} \
-                        -config api.addrs.addr=* \
-                        -config api.disablekey=false \
+                    docker run -u root -d \\
+                        --network=host \\
+                        --name zap \\
+                        ghcr.io/zaproxy/zaproxy \\
+                        zap.sh -daemon \\
+                        -host 0.0.0.0 \\
+                        -port ${ZAP_PORT} \\
+                        -config api.key=${ZAP_API_KEY} \\
+                        -config api.addrs.addr=* \\
+                        -config api.disablekey=false \\
                         -config api.includelocalhost=true
 
                     echo "⏳ Waiting for ZAP API to become available..."
