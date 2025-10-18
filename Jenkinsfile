@@ -62,7 +62,7 @@ pipeline {
                         ghcr.io/zaproxy/zaproxy \
                         zap.sh -daemon -host 0.0.0.0 -port 8090 \
                         -config api.key=changeme \
-                        -config api.addrs.addr=.* \
+                        -config api.addrs.addr=0.0.0.0  \
                         -config api.addrs.addr.regex=true \
                         -config api.disablekey=false \
                         -config api.includelocalhost=true
