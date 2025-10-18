@@ -45,16 +45,18 @@ pipeline {
             steps {
                 echo "Starting ZAP Docker container on port ${env.ZAP_PORT}"
                 sh '''
-                    docker rm -f zap || true
+                docker run -u root -d \
+                --network=host \
+                --name zap \
+                ghcr.io/zaproxy/zaproxy \
+                zap.sh -daemon \
+                -host 0.0.0.0 \
+                -port ${ZAP_PORT} \
+                -config api.key=${ZAP_API_KEY}
+                -config api.addrs.addr=.* \
+                -config api.disablekey=false
 
-                    # Use host networking for better connectivity to localhost apps (Linux only)
-                    docker run -u root -d \
-                        --network=host \
-                        --name zap \
-                        ghcr.io/zaproxy/zaproxy \
-                        zap.sh -daemon -host 0.0.0.0 -port ${ZAP_PORT} -config api.key=${ZAP_API_KEY}
-
-                    echo "⏳ Waiting for ZAP API to become available..."
+                echo "⏳ Waiting for ZAP API to become available..."
 
                     for i in {1..60}; do
                         STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:${ZAP_PORT}/JSON/core/view/version/)
