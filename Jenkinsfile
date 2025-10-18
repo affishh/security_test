@@ -57,6 +57,7 @@ pipeline {
                         -config api.key=${ZAP_API_KEY} \
                         -config api.addrs.addr=* \
                         -config api.disablekey=false
+                        -config api.includelocalhost=true
 
                     echo "⏳ Waiting for ZAP API to become available..."
 
