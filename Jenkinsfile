@@ -23,6 +23,7 @@ pipeline {
                         -t owasp/zap2docker-stable zap-baseline.py \
                         -t http://localhost:3000 \
                         -r zap_report.html
+                        -d -I
                 '''
             }
         }
