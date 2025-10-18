@@ -4,7 +4,7 @@ pipeline {
     environment {
         ZAP_PORT = '8090'
         ZAP_API_KEY = 'changeme'
-        TARGET_URL = 'http://host.docker.internal:4000'  // <-- Important: use host.docker.internal to let Docker container access Node app
+        TARGET_URL = 'http://host.docker.internal:4000'
     }
 
     stages {
@@ -28,12 +28,13 @@ pipeline {
                         nohup npm start > nodeapp.log 2>&1 &
                         echo $! > nodeapp.pid
 
-                        for i in {1..30}; do
+                        echo "Waiting for Node app to be ready..."
+                        for i in $(seq 1 30); do
                             if curl -s http://localhost:4000 > /dev/null; then
-                                echo "Node app is up"
+                                echo "✅ Node app is up!"
                                 break
                             fi
-                            echo "Waiting for Node app... ($i/30)"
+                            echo "⏳ Waiting for Node app... ($i/30)"
                             sleep 2
                         done
                     '''
@@ -54,12 +55,12 @@ pipeline {
                         zap.sh -daemon -host 0.0.0.0 -port ${ZAP_PORT} -config api.key=${ZAP_API_KEY}
 
                     echo "Waiting for ZAP API to become available..."
-                    for i in {1..30}; do
+                    for i in $(seq 1 30); do
                         if curl -s http://localhost:${ZAP_PORT}/JSON/core/view/version/ | grep -q version; then
-                            echo "ZAP is ready!"
+                            echo "✅ ZAP is ready!"
                             break
                         fi
-                        echo "Waiting for ZAP... ($i/30)"
+                        echo "⏳ Waiting for ZAP... ($i/30)"
                         sleep 2
                     done
                 '''
@@ -74,7 +75,9 @@ pipeline {
                     pip install --quiet python-owasp-zap-v2.4
 
                     echo "Running ZAP Scan..."
-                    TARGET_URL=${TARGET_URL} ZAP_API_KEY=${ZAP_API_KEY} python3 zap_scan.py
+                    export TARGET_URL="${TARGET_URL}"
+                    export ZAP_API_KEY="${ZAP_API_KEY}"
+                    python3 zap_scan.py || { echo "❌ ZAP scan failed"; exit 1; }
                 '''
             }
         }

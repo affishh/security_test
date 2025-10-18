@@ -3,8 +3,8 @@ import time
 import os
 
 target = os.getenv('TARGET_URL', 'http://host.docker.internal:4000')
-zap_api_key = os.getenv('ZAP_API_KEY', 'changeme')
-zap = ZAPv2(apikey=zap_api_key, proxies={})  # No proxy! Direct API calls.
+api_key = os.getenv('ZAP_API_KEY', 'changeme')
+zap = ZAPv2(apikey=api_key, proxies={'http': 'http://localhost:8090', 'https': 'http://localhost:8090'})
 
 print(f"Accessing target: {target}")
 
@@ -13,22 +13,25 @@ try:
     time.sleep(2)
 
     print("Starting spider scan...")
-    scan_id = zap.spider.scan(target)
-    while int(zap.spider.status(scan_id)) < 100:
-        print(f"Spider progress: {zap.spider.status(scan_id)}%")
+    spider_id = zap.spider.scan(target)
+    time.sleep(2)
+
+    while int(zap.spider.status(spider_id)) < 100:
+        print(f"Spider progress: {zap.spider.status(spider_id)}%")
         time.sleep(2)
 
-    print("Spider completed. Starting active scan...")
-    active_scan_id = zap.ascan.scan(target)
-    while int(zap.ascan.status(active_scan_id)) < 100:
-        print(f"Active scan progress: {zap.ascan.status(active_scan_id)}%")
+    print("Spider complete. Starting active scan...")
+    ascan_id = zap.ascan.scan(target)
+    while int(zap.ascan.status(ascan_id)) < 100:
+        print(f"Active scan progress: {zap.ascan.status(ascan_id)}%")
         time.sleep(5)
 
-    print("Scan completed. Generating report...")
-    with open('zap_report.html', 'w') as f:
-        f.write(zap.core.htmlreport())
-    print("Report saved as zap_report.html")
+    print("Generating report...")
+    report = zap.core.htmlreport()
+    with open("zap_report.html", "w") as f:
+        f.write(report)
 
+    print("✅ ZAP scan completed and report saved.")
 except Exception as e:
-    print("❌ ZAP scan failed:", e)
+    print(f"❌ ZAP scan failed: {e}")
     exit(1)
