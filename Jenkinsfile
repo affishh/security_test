@@ -45,7 +45,7 @@ pipeline {
                 docker run -u root -d \
                   -p ${ZAP_PORT}:${ZAP_PORT} \
                   --name zap \
-                  owasp/zap2docker-stable \
+                  ghcr.io/zaproxy/zaproxy \
                   zap.sh -daemon -host 0.0.0.0 -port ${ZAP_PORT} -config api.key=${ZAP_API_KEY}
                 sleep 10
                 """
