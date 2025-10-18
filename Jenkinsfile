@@ -65,7 +65,7 @@ pipeline {
 
                     echo "⏳ Waiting for ZAP to become available..."
                     for i in {1..60}; do
-                        STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://zap:8090)
+                        STATUS=$(docker exec zap curl -s -o /dev/null -w "%{http_code}" http://localhost:8090)
                         if [ "$STATUS" = "200" ]; then
                             echo "✅ ZAP is ready"
                             break
@@ -104,7 +104,7 @@ pipeline {
             echo "🧹 Cleaning up..."
             sh '''
                 docker rm -f nodeapp || true
-                ddocker rm -f zap || true
+                docker rm -f zap || true
                 docker network rm zap-net || true
 
             '''
