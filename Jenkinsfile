@@ -33,12 +33,14 @@ pipeline {
                     docker run -d --name nodeapp --network zap-net nodeapp-img
 
                     echo "⏳ Waiting for the app to start..."
-                    for i in {1..30}; do
-                        if curl -s http://localhost:4000 > /dev/null; then
+                    for i in {1..60}; do
+                        STATUS=$(docker exec zap curl -s -o /dev/null -w "%{http_code}" http://localhost:8090)
+
+                        if [ "$STATUS" = "200" ]; then
                             echo "✅ App is up"
                             break
                         fi
-                        echo "⏱️ Waiting for app... ($i/30)"
+                        echo "⏱️ Waiting for app... ($i/60)"
                         sleep 2
                     done
                 '''
@@ -104,7 +106,7 @@ pipeline {
                 docker rm -f nodeapp || true
                 ddocker rm -f zap || true
                 docker network rm zap-net || true
-                
+
             '''
         }
     }
