@@ -39,6 +39,7 @@ pipeline {
             steps {
                 echo "Starting ZAP Docker container on port ${env.ZAP_PORT}"
                 sh """
+                docker rm -f zap || true
                 docker run -u root -d \
                   -p ${ZAP_PORT}:${ZAP_PORT} \
                   --name zap \
@@ -46,6 +47,7 @@ pipeline {
                   zap.sh -daemon -host 0.0.0.0 -port ${ZAP_PORT} -config api.key=${ZAP_API_KEY}
                 sleep 10
                 """
+                
             }
         }
 
