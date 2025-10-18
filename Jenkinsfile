@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        ZAP_PORT = '8090'
+        ZAP_PORT = '8091'
         ZAP_API_KEY = 'changeme'
         TARGET_URL = 'http://host.docker.internal:4000'
     }
