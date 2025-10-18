@@ -62,15 +62,18 @@ pipeline {
                         -config api.addrs.addr.regex=true \
                         -config api.disablekey=false \
                         -config api.includelocalhost=true
+                    
+                    echo "📜 ZAP logs (initial)..."
+                    docker logs zap | tail -n 20
 
                     echo "⏳ Waiting for ZAP to become available..."
-                    for i in {1..60}; do
+                    for i in {1..90}; do
                         STATUS=$(docker exec zap curl -s -o /dev/null -w "%{http_code}" http://localhost:8090)
                         if [ "$STATUS" = "200" ]; then
                             echo "✅ ZAP is ready"
                             break
                         fi
-                        echo "⏱️ Waiting for ZAP... ($i/60)"
+                        echo "⏱️ Waiting for ZAP... ($i/90)"
                         sleep 2
                     done
                 '''
