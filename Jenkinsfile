@@ -4,7 +4,7 @@ pipeline {
     environment {
         ZAP_PORT = '8090'
         ZAP_API_KEY = 'changeme'
-        TARGET_URL = 'http://localhost:4000'
+        TARGET_URL = 'http://host.docker.internal:4000'  // <-- Important: use host.docker.internal to let Docker container access Node app
     }
 
     stages {
@@ -28,7 +28,6 @@ pipeline {
                         nohup npm start > nodeapp.log 2>&1 &
                         echo $! > nodeapp.pid
 
-                        # Wait until the app responds
                         for i in {1..30}; do
                             if curl -s http://localhost:4000 > /dev/null; then
                                 echo "Node app is up"
@@ -56,7 +55,7 @@ pipeline {
 
                     echo "Waiting for ZAP API to become available..."
                     for i in {1..30}; do
-                        if curl -s http://localhost:${ZAP_PORT}/JSON/core/view/version/ | grep -q "version"; then
+                        if curl -s http://localhost:${ZAP_PORT}/JSON/core/view/version/ | grep -q version; then
                             echo "ZAP is ready!"
                             break
                         fi
@@ -75,7 +74,7 @@ pipeline {
                     pip install --quiet python-owasp-zap-v2.4
 
                     echo "Running ZAP Scan..."
-                    python3 zap_scan.py
+                    TARGET_URL=${TARGET_URL} ZAP_API_KEY=${ZAP_API_KEY} python3 zap_scan.py
                 '''
             }
         }
