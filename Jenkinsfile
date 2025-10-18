@@ -47,20 +47,20 @@ pipeline {
                 sh """
                     docker rm -f zap || true
 
-                    docker run -u root -d \
-                        --name zap \
-                        -p ${ZAP_PORT}:8090 \
+                    docker run --name zap -d \
+                        -p 8090:8090 \
                         ghcr.io/zaproxy/zaproxy \
                         zap.sh -daemon \
                         -host 0.0.0.0 \
                         -port 8090 \
-                        -config api.key=${ZAP_API_KEY} \
-                        -config api.addrs.addr=0.0.0.0 \
+                        -config api.key=changeme \
+                        -config api.addrs.addr=.* \
                         -config api.addrs.addr.regex=true \
                         -config api.disablekey=false \
                         -config api.includelocalhost=true
 
                     echo "⏳ Waiting for ZAP API to become available..."
+                    sleep 20
 
                     for i in {1..60}; do
                         STATUS=\$(curl -s -o /dev/null -w "%{http_code}" http://localhost:${ZAP_PORT}/JSON/core/view/version/)
