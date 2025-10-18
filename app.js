@@ -1,6 +1,11 @@
 const express = require('express');
 const app = express();
-const port = 3000;
+const port = 4000;
 
-app.get('/', (req, res) => res.send('Hello, secure world!'));
-app.listen(port, () => console.log(`App running at http://localhost:${port}`));
+app.get('/', (req, res) => {
+  res.send('Hello from insecure Node.js app!');
+});
+
+app.listen(port, () => {
+  console.log(`App listening at http://localhost:${port}`);
+});
