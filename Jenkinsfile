@@ -19,7 +19,10 @@ pipeline {
             steps {
                 script {
                     echo "Starting Node.js app on port ${env.NODE_PORT}"
+                    // Start Node app in background and save PID
                     sh 'nohup npm start > app.log 2>&1 & echo $! > nodeapp.pid'
+
+                    // Wait for app to be up (max ~30 seconds)
                     sh '''
                     for i in {1..10}; do
                       if curl -s ${TARGET_URL} > /dev/null; then
@@ -38,39 +41,53 @@ pipeline {
         stage('Start ZAP in Docker') {
             steps {
                 echo "Starting ZAP Docker container on port ${env.ZAP_PORT}"
-                sh """
+                sh '''
                 docker rm -f zap || true
+
                 docker run -u root -d \
-                  -p ${ZAP_PORT}:${ZAP_PORT} \
-                  --name zap \
-                  ghcr.io/zaproxy/zaproxy \
-                  zap.sh -daemon -host 0.0.0.0 -port ${ZAP_PORT} -config api.key=${ZAP_API_KEY}
-                sleep 10
-                """
-                
+                    -p ${ZAP_PORT}:${ZAP_PORT} \
+                    --name zap \
+                    ghcr.io/zaproxy/zaproxy \
+                    zap.sh -daemon -host 0.0.0.0 -port ${ZAP_PORT} -config api.key=${ZAP_API_KEY}
+
+                # Wait for ZAP to be ready
+                echo "Waiting for ZAP to be ready..."
+                for i in {1..20}; do
+                  if curl -s "http://localhost:${ZAP_PORT}" > /dev/null; then
+                    echo "ZAP is ready."
+                    break
+                  else
+                    echo "Waiting for ZAP to start..."
+                    sleep 3
+                  fi
+                done
+                '''
             }
         }
 
         stage('Setup Python Env and Run ZAP Scan') {
             steps {
                 sh '''
+                # Create and activate Python virtual environment
                 python3 -m venv venv
                 . venv/bin/activate
-                pip install --quiet python-owasp-zap-v2.4
-                '''
 
-                writeFile file: 'zap_scan.py', text: """
+                # Install ZAP Python API
+                pip install --quiet python-owasp-zap-v2.4
+
+                # Create zap_scan.py
+                cat <<EOF > zap_scan.py
 import time
 import os
 from zapv2 import ZAPv2
 
 api_key = os.getenv('ZAP_API_KEY', 'changeme')
 target = os.getenv('TARGET_URL', 'http://localhost:4000')
-zap_port = os.getenv('ZAP_PORT', '8090')
 
+# Set up proxy
 zap = ZAPv2(apikey=api_key, proxies={
-    'http': f'http://localhost:{zap_port}',
-    'https': f'http://localhost:{zap_port}'
+    'http': 'http://localhost:8090',
+    'https': 'http://localhost:8090'
 })
 
 print("Accessing target...")
@@ -95,11 +112,10 @@ with open("zap_report.html", "w") as f:
     f.write(report)
 
 print("Scan complete.")
-"""
+EOF
 
-                sh '''
-                . venv/bin/activate
-                python zap_scan.py
+                # Run the scan
+                python3 zap_scan.py
                 '''
             }
         }
