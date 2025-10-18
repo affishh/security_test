@@ -3,7 +3,7 @@ pipeline {
 
     environment {
         ZAP_API_KEY = 'changeme'
-        ZAP_PORT = '8080'
+        ZAP_PORT = '8090'
         TARGET_URL = 'http://localhost:4000'
         NODE_PORT = '4000'
     }
