@@ -12,6 +12,8 @@ zap = ZAPv2(apikey=api_key, proxies={'http': 'http://localhost:8090', 'https': '
 
 print(f"Accessing target: {target}")
 
+zap.urlopen(target)
+zap.spider.scan(target)
 try:
     zap.urlopen(target)
     time.sleep(2)
