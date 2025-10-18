@@ -30,7 +30,7 @@ pipeline {
 
                     docker build -t nodeapp-img ./app
 
-                    docker run -d --name nodeapp --network zap-net -p 4000:4000 nodeapp-img
+                    docker run -d --name nodeapp --network zap-net nodeapp-img
 
                     echo "⏳ Waiting for the app to start..."
                     for i in {1..30}; do
@@ -101,9 +101,10 @@ pipeline {
         always {
             echo "🧹 Cleaning up..."
             sh '''
-                docker rm -f nodeapp ||
-                docker rm -f zap || true
+                docker rm -f nodeapp || true
+                ddocker rm -f zap || true
                 docker network rm zap-net || true
+                
             '''
         }
     }
