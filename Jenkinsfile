@@ -45,10 +45,10 @@ pipeline {
             steps {
                 echo "🚀 Starting ZAP Docker container on port ${env.ZAP_PORT}"
                 sh """
-                    docker rm -f zap || true
+                    
 
                     docker run -u root -d \\
-                        --network=host \\
+                        -p ${ZAP_PORT}:${ZAP_PORT} \
                         --name zap \\
                         ghcr.io/zaproxy/zaproxy \\
                         zap.sh -daemon \\
