@@ -57,7 +57,7 @@ pipeline {
                     docker run -u root -d --name zap --network zap-net \
                         -p 8090:8090 ghcr.io/zaproxy/zaproxy \
                         zap.sh -daemon -host 0.0.0.0 -port 8090 \
-                        -config api.key=${ZAP_API_KEY} \
+                        -config api.key=changeme \
                         -config api.addrs.addr=0.0.0.0 \
                         -config api.addrs.addr.regex=true \
                         -config api.disablekey=false \
