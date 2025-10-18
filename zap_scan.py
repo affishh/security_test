@@ -29,6 +29,5 @@ try:
     print("Report saved as zap_report.html")
 
 except Exception as e:
-    print("❌ ZAP scan failed:", e)
+    print(" ZAP scan failed:", e)
     exit(1)
-print(" ZAP scan completed successfully.")
