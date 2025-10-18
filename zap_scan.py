@@ -4,11 +4,14 @@ import time
 
 target = os.getenv("TARGET_URL")
 apikey = os.getenv("ZAP_API_KEY")
+zap_host = os.getenv('ZAP_HOST', 'zap') 
 
-zap = ZAPv2(apikey=apikey, proxies={'http': 'http://localhost:8090', 'https': 'http://localhost:8090'})
+ap = ZAPv2(apikey=api_key, proxies={'http': f'http://{zap_host}:8090', 'https': f'http://{zap_host}:8090'})
+
 
 print(f"Scanning target: {target}")
 zap.urlopen(target)
+zap.spider.scan(target)
 time.sleep(2)
 
 scan_id = zap.ascan.scan(target)
