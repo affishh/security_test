@@ -45,8 +45,7 @@ pipeline {
             steps {
                 echo "🚀 Starting ZAP Docker container on port ${env.ZAP_PORT}"
                 sh """
-                    
-
+                    docker rm -f zap || true
                     docker run -u root -d \\
                         -p ${ZAP_PORT}:${ZAP_PORT} \
                         --name zap \\
