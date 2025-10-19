@@ -20,7 +20,7 @@ pipeline {
                     sonar-scanner \
                       -Dsonar.projectKey=nodejs-app \
                       -Dsonar.sources=. \
-                      -Dsonar.login=squ_734e65894fd94fad26e9dc9994ea852d9106b224
+                      -Dsonar.login=sqa_4db7ef4b8b07959de0a35daf1066ef02d558cbdb
                     """
                 }
             }
