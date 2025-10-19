@@ -1,11 +1,12 @@
 {
-  "name": "insecure-node-app",
+  "name": "vuln-node-app",
   "version": "1.0.0",
   "main": "app.js",
   "scripts": {
     "start": "node app.js"
   },
   "dependencies": {
-    "express": "^4.21.2"
+    "body-parser": "^1.20.0",
+    "express": "^4.17.1"
   }
 }
